@@ -58,6 +58,20 @@ const useStyles = makeStyles((theme) => ({
   media: {
     height: 400,
   },
+
+  blackText: {
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center',
+    padding:'90px',
+    color: 'black', // Set the text color to black
+    fontFamily: 'Arial, sans-serif', // Set a nice font
+    fontSize: '18px', // Set the font size
+    fontWeight: 'bold', // Add bold text
+    textAlign: 'center', // Center-align the text
+    margin: '20px 0'
+  },
+
   paper: {
     padding: theme.spacing(2),
     margin: 'auto',
@@ -89,6 +103,15 @@ const useStyles = makeStyles((theme) => ({
   imageCardEmpty: {
     height: 'auto',
   },
+
+  detailinside:{
+    marginBottom: '20px', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center',
+    fontSize:'150px' 
+  },
+  
   noImage: {
     margin: "auto",
     width: 400,
@@ -101,9 +124,13 @@ const useStyles = makeStyles((theme) => ({
     background: 'white',
   },
   tableContainer: {
-    backgroundColor: 'white !important',
+    backgroundColor: 'white', // Set the background color to white
     boxShadow: 'none !important',
+    padding: '20px', // Add padding for spacing
+    borderRadius: '15px', // Add rounded corners
+    fontFamily: 'Arial, sans-serif', // Set a nice font
   },
+
   table: {
     backgroundColor: 'transparent !important',
   },
@@ -166,8 +193,25 @@ result : {
     boxShadow: 'none',
     color: 'white'
   },
+
+  labelSpan: {
+    fontWeight: 'bold', // Add bold text
+    fontSize: '24px', // Increase font size
+    marginRight: '10px', // Add spacing between label and prediction
+  },
+
   loader: {
     color: '#be6a77 !important',
+  },
+  greenText:{
+    fontWeight:'bold',
+    color:'green',
+    fontSize: '20px'
+  },
+  redText:{
+    fontWeight:'bold',
+    color:'red',
+    fontSize: '20px'
   }
 }));
 export const ImageUpload = () => {
@@ -240,7 +284,7 @@ export const ImageUpload = () => {
       <AppBar position="static" className={classes.appbar}>
         <Toolbar>
           <Typography className={classes.title} variant="h6" noWrap>
-            Parkinson Diseases Classification 
+            NeuraTrace PD : Parkinson Diseases Prediction 
           </Typography>
           <div className={classes.grow} />
           {/* <Avatar src={cblogo}></Avatar> */}
@@ -280,28 +324,29 @@ export const ImageUpload = () => {
           </Grid>
 
           {/* Result Display Section */}
+          
           <Grid item xs={12} sm={6}> {/* Set the width for small screens */}
+          <h2>Predicting Result</h2>
             <div className={classes.result}>
+           
+              
 
-              {data && <div className={classes.detail}>
-                <TableContainer component={Paper} className={classes.tableContainer}>
+{data && <div className={classes.detail}>
+<center>
+          <TableContainer component={Paper} className={classes.tableContainer}>
                   <Table className={classes.table} size="small" aria-label="simple table">
-                    <TableHead className={classes.tableHead}>
-                      <TableRow className={classes.tableRow}>
-                        <TableCell className={classes.tableCell1}>Label:</TableCell>
-                        <TableCell align="right" className={classes.tableCell1}>Confidence:</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody className={classes.tableBody}>
-                      <TableRow className={classes.tableRow}>
-                        <TableCell component="th" scope="row" className={classes.tableCell}>
-                          {data.prediction}
-                        </TableCell>
-                        {/* <TableCell align="right" className={classes.tableCell}>{confidence}%</TableCell> */}
-                      </TableRow>
-                    </TableBody>
+                  <TableBody className={classes.tableBody}>
+      <TableRow className={classes.tableRow}>
+        <span className={classes.labelSpan}>Label:</span>
+        <span className={data.prediction === 'Healthy' ? classes.greenText : classes.redText}>
+          {data.prediction}
+        </span>
+      </TableRow>
+    </TableBody>
+                    
                   </Table>
                 </TableContainer>
+                </center>
               </div>}
               {isLoading && <div className={classes.detail}>
                 <CircularProgress color="secondary" className={classes.loader} />
@@ -310,7 +355,19 @@ export const ImageUpload = () => {
                 </Typography>
               </div>}
             
-        
+              {data && <div className={classes.detail}>
+
+{data.prediction === "Healthy" ? (
+  <Typography variant="h6" className={classes.blackText}>
+    The MRI suggests that the patient is Healthy.
+  </Typography>
+) : (
+  <Typography variant="h6" className={classes.blackText}>
+
+    The MRI suggests that the patient may have Parkinson.
+  </Typography>
+)}
+              </div>}
           {data &&
                 <div className={classes.detail} style={{ display: 'flex', justifyContent: 'center' }}> {/* Center the Clear button */} 
               <ColorButton variant="contained" className={classes.clearButton} color="primary" component="span" size="small" onClick={clearData} startIcon={<Clear fontSize="large" />}>

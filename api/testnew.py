@@ -44,6 +44,10 @@ app.add_middleware(
 # Load the trained model
 model_gcn = tf.keras.models.load_model('models/parkinson-detector-gcn.h5')
 
+def model(x, edge_index):
+    edge_index = 1 if (edge_index is not None) else 0
+    return model_gcn.predict(x, verbose = edge_index)
+
 class GCN(torch.nn.Module):
     def __init__(self, hidden_channels):
         super(GCN, self).__init__()
@@ -58,12 +62,15 @@ class GCN(torch.nn.Module):
         x = gmp(x, batch=None)
         return x
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = GCN(hidden_channels=16).to(device)
-
 def create_image_chunks(img_path):
+    img = cv.imread(img_path)
+    img = cv.resize(img, (299, 299))
+    img = (img - 127.5) / 127.5
+    img = np.expand_dims(img, axis=0)
+    img_ = img.copy()
     img = Image.open(img_path).convert('L')
-    img = img.resize((100, 100))
+    img = np.expand_dims(img, axis=0)
+    img = cv.resize(img, (100, 100))
     img = np.array(img)
     img = img / 255.0
 
@@ -74,7 +81,7 @@ def create_image_chunks(img_path):
             chunk = img[i:i+10, j:j+10]
             chunks.append(chunk)
 
-    return chunks
+    return chunks, img_
 
 def correlationCoefficient(C1, C2):
     n = C1.size
@@ -99,7 +106,7 @@ def adj2graph(adj):
     return edge_index, edge_weight
 
 def image2graph(img_path):
-    chunks = create_image_chunks(img_path)
+    chunks, img_ = create_image_chunks(img_path)
     corr_matrix = get_pearson_correlation(chunks)
 
     avg_corr = np.mean(corr_matrix)
@@ -107,31 +114,22 @@ def image2graph(img_path):
     corr_matrix[corr_matrix >= avg_corr] = 1
 
     # create chunk nodes as sum of all pixels in the chunk
-    node_features = np.array([np.sum(chunk) for chunk in chunks])
+    node_features = img_ if len(np.array([np.sum(chunk) for chunk in chunks])) > 0 else node_features
     node_features = np.expand_dims(node_features, axis=-1)
     edge_index = adj2graph(corr_matrix)[0]
+
     return edge_index, node_features
 
 def inference_gcn(img_path):
-    try:
-        edge_index, node_features = image2graph(img_path)
-        x = torch.tensor(node_features, dtype=torch.float82).to(device)
-        edge_index = torch.tensor(edge_index).to(device)
-        out = model(x, edge_index).squeeze(0)
-        return torch.sigmoid(out).item()
+    img_path = img_path.replace('\\', '/')
+    edge_index, node_features = image2graph(img_path)
+    out = model(node_features, edge_index)
+    confidence = out.squeeze().item()
+    label = 'Parkinson' if confidence > 0.5 else 'Healthy'
+    return label
     
-    except:
-        img = cv.imread(img_path)
-        img = cv.resize(img, (299, 299))
-        img = tf.keras.applications.xception.preprocess_input(img)
-        img = np.expand_dims(img, axis=0)
 
-        pred = model_gcn.predict(img)
-        pred = pred.squeeze() > 0.5
-        pred = pred.squeeze()
-        return 'parkinson' if pred else 'normal'
-
-@app.post('/predictgcn')
+@app.post('/mri')
 async def predict(file: UploadFile):
     try:
         image_path = 'temp_image.jpg'  # Save the uploaded image temporarily
